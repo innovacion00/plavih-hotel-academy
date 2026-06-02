@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { isMockMode } from '@/lib/auth/session'
 import { getMockCourseDetail, getMockLesson } from '@/lib/mocks/courses'
-import type { Profile, UserRole } from '@/types'
+import type { Profile } from '@/types'
 
 export type LessonVideo = {
   id: string
@@ -70,13 +70,13 @@ export async function getCourseDetail(
 
   const supabase = await createClient()
 
-  // 1. Fetch course
+  // 1. Fetch course — students only see published; editors see all
   let courseQuery = supabase
     .from('courses')
     .select('id, slug, title, description, category, level, duration_hours, thumbnail_url, instructor_id, institution_id, is_published')
     .eq('slug', slug)
-    .eq('is_published', true)
 
+  if (profile.role === 'student') courseQuery = courseQuery.eq('is_published', true)
   if (profile.role === 'admin') courseQuery = courseQuery.eq('institution_id', profile.institution_id)
   if (profile.role === 'instructor') courseQuery = courseQuery.eq('instructor_id', profile.id)
 
@@ -92,7 +92,7 @@ export async function getCourseDetail(
       .eq('course_id', course.id)
       .eq('student_id', profile.id)
       .single()
-    if (!enr || !enr.is_active) return null  // students can only see enrolled courses
+    if (enr?.is_active) enrollment = enr  // show course even if not enrolled (so they can enroll)
     enrollment = enr
   }
 

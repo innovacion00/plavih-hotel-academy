@@ -186,7 +186,7 @@ export async function getInstructorCourses(profile: Profile) {
   const supabase = await createClient()
   let query = supabase
     .from('courses')
-    .select('id, slug, title, is_published, category, created_at')
+    .select('id, slug, title, is_published, category, level, duration_hours, created_at')
     .order('created_at', { ascending: false })
 
   if (profile.role === 'admin') query = query.eq('institution_id', profile.institution_id)
