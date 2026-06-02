@@ -180,7 +180,7 @@ export async function getCourseBuilderData(
 export async function getInstructorCourses(profile: Profile) {
   if (isMockMode) {
     const mock = getMockCourseDetail('recepcionista-hotel')
-    return [{ id: mock.id, slug: mock.slug, title: mock.title, is_published: mock.is_published, category: mock.category }]
+    return [{ id: mock.id, slug: mock.slug, title: mock.title, is_published: mock.is_published, category: mock.category, level: mock.level, duration_hours: mock.duration_hours, created_at: '' }]
   }
 
   const supabase = await createClient()
