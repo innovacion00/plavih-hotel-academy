@@ -206,6 +206,56 @@ function LessonRow({
   )
 }
 
+// ── Edit Module form ──────────────────────────────────────────
+
+function EditModuleForm({
+  module,
+  courseId,
+  onDone,
+}: {
+  module: BuilderModule
+  courseId: string
+  onDone: () => void
+}) {
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    startTransition(async () => {
+      const result = await updateModuleAction(module.id, courseId, { ok: true }, fd)
+      if (result.ok) { onDone(); router.refresh() }
+      else setError(result.error)
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center gap-2 px-5 py-3 bg-[#F5F7FA] border-b border-gray-100">
+      {error && <p className="text-xs text-red-600 mr-2">{error}</p>}
+      <input
+        name="title"
+        defaultValue={module.title}
+        required
+        autoFocus
+        className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00A9E0]"
+        disabled={pending}
+      />
+      <input name="description" type="hidden" value={module.description ?? ''} />
+      <input name="order_index" type="hidden" value={module.order_index} />
+      <button type="submit" disabled={pending}
+        className="text-xs font-semibold bg-[#00A9E0] hover:bg-[#007FA8] text-white px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
+        {pending ? '…' : 'Guardar'}
+      </button>
+      <button type="button" onClick={onDone}
+        className="text-xs text-[#5F6368] hover:text-[#222222] px-3 py-1.5 rounded-full border border-gray-200 transition-colors">
+        Cancelar
+      </button>
+    </form>
+  )
+}
+
 // ── Module card ───────────────────────────────────────────────
 
 function ModuleCard({
@@ -218,6 +268,7 @@ function ModuleCard({
   courseId: string
 }) {
   const [showAddLesson, setShowAddLesson] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [deleting, startDelete] = useTransition()
   const router = useRouter()
 
@@ -232,6 +283,9 @@ function ModuleCard({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Module header */}
+      {editing ? (
+        <EditModuleForm module={module} courseId={courseId} onDone={() => setEditing(false)} />
+      ) : (
       <div className="flex items-center gap-3 px-5 py-3.5 bg-[#F5F7FA] border-b border-gray-100">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-[#222222] text-sm truncate">{module.title}</h3>
@@ -240,13 +294,20 @@ function ModuleCard({
           )}
         </div>
         <button
+          onClick={() => setEditing(true)}
+          className="text-xs text-[#5F6368] hover:text-[#222222] hover:bg-white px-2.5 py-1 rounded-full transition-colors border border-gray-200"
+        >
+          Editar
+        </button>
+        <button
           onClick={handleDeleteModule}
           disabled={deleting}
           className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50"
         >
-          {deleting ? '…' : 'Eliminar módulo'}
+          {deleting ? '…' : 'Eliminar'}
         </button>
       </div>
+      )}
 
       {/* Lessons */}
       <div className="p-3 space-y-0.5">
