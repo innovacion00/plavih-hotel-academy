@@ -16,11 +16,6 @@ function zodError<T = void>(e: ZodError): ActionResult<T> {
   return { ok: false, error: first?.message ?? 'Datos inválidos.' }
 }
 
-function guardRole(): boolean {
-  // Called after getServerProfile — just a reminder that student role is blocked
-  return true
-}
-
 // ── Course ────────────────────────────────────────────────────
 
 export async function createCourseAction(
@@ -74,6 +69,21 @@ export async function createCourseAction(
 
   if (error || !data) return { ok: false, error: 'No se pudo crear el curso.' }
   redirect(`/dashboard/cursos/${data.slug}/builder`)
+}
+
+export async function deleteCourseAction(courseId: string): Promise<ActionResult> {
+  if (isMockMode) return { ok: false, error: 'Modo demo activo.' }
+
+  const profile = await getServerProfile()
+  if (!profile || profile.role === 'student') return { ok: false, error: 'Sin permisos.' }
+
+  const supabase = await createClient()
+  const canEdit = await assertEditAccess(courseId, profile, supabase)
+  if (!canEdit) return { ok: false, error: 'No tienes acceso a este curso.' }
+
+  const { error } = await supabase.from('courses').delete().eq('id', courseId)
+  if (error) return { ok: false, error: 'No se pudo eliminar el curso.' }
+  return { ok: true }
 }
 
 export async function updateCourseAction(

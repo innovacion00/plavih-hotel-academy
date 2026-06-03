@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getServerProfile } from '@/lib/auth/session'
 import { getInstructorCourses } from '@/lib/course/queries'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
+import DeleteCourseButton from './DeleteCourseButton'
 
 export const metadata: Metadata = { title: 'Cursos — Dashboard' }
 
@@ -81,7 +82,7 @@ export default async function DashboardCursosPage() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-center">
                       <Link href={`/dashboard/cursos/${c.slug}`} className="text-xs font-semibold text-[#00A9E0] hover:underline">
                         {profile.role === 'student' ? 'Ir al curso →' : 'Ver →'}
                       </Link>
@@ -89,6 +90,9 @@ export default async function DashboardCursosPage() {
                         <Link href={`/dashboard/cursos/${c.slug}/builder`} className="text-xs font-semibold text-[#5F6368] hover:text-[#222222] hover:underline">
                           Builder →
                         </Link>
+                      )}
+                      {(profile.role === 'superadmin' || profile.role === 'admin' || profile.role === 'instructor') && (
+                        <DeleteCourseButton courseId={c.id} title={c.title} />
                       )}
                     </div>
                   </td>
