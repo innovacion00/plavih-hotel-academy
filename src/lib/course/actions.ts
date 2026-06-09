@@ -6,6 +6,9 @@ import { getServerProfile, isMockMode } from '@/lib/auth/session'
 import { assertEditAccess } from '@/lib/course/queries'
 import { courseSchema, moduleSchema, lessonSchema, videoUploadSchema } from '@/lib/course/schema'
 import { ZodError } from 'zod'
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { getSpacesClient } from '@/lib/video/spaces-client'
 
 export type ActionResult<T = void> =
   | { ok: true; data?: T }
@@ -317,19 +320,21 @@ export async function getVideoUploadUrl(params: {
   const canEdit = await assertEditAccess(params.courseId, profile, supabase)
   if (!canEdit) return { ok: false, error: 'Sin acceso a este curso.' }
 
-  // Derive storage path: courses/{courseId}/lessons/{lessonId}/{timestamp}.ext
   const ext = params.fileName.split('.').pop() ?? 'mp4'
   const storagePath = `courses/${params.courseId}/lessons/${params.lessonId}/${Date.now()}.${ext}`
 
-  const { data, error } = await supabase.storage
-    .from('lesson-videos')
-    .createSignedUploadUrl(storagePath)
-
-  if (error || !data?.signedUrl) {
+  try {
+    const { client, bucket } = getSpacesClient()
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: storagePath,
+      ContentType: params.mimeType,
+    })
+    const signedUrl = await getSignedUrl(client, command, { expiresIn: 15 * 60 })
+    return { ok: true, data: { signedUrl, storagePath } }
+  } catch {
     return { ok: false, error: 'No se pudo generar la URL de upload.' }
   }
-
-  return { ok: true, data: { signedUrl: data.signedUrl, storagePath } }
 }
 
 export async function confirmVideoUpload(params: {
@@ -356,8 +361,14 @@ export async function confirmVideoUpload(params: {
     .eq('lesson_id', params.lessonId)
     .single()
 
+  const { client, bucket } = getSpacesClient()
+
   if (existing) {
-    await supabase.storage.from('lesson-videos').remove([existing.storage_path])
+    try {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: existing.storage_path }))
+    } catch {
+      // file may not exist; proceed with DB cleanup
+    }
     await supabase.from('lesson_videos').delete().eq('id', existing.id)
   }
 
@@ -366,8 +377,8 @@ export async function confirmVideoUpload(params: {
     .insert({
       lesson_id: params.lessonId,
       storage_path: params.storagePath,
-      storage_bucket: 'lesson-videos',
-      storage_provider: 'supabase',
+      storage_bucket: bucket,
+      storage_provider: 'digitalocean',
       duration_seconds: params.durationSeconds ?? null,
       size_bytes: params.fileSizeBytes,
       mime_type: params.mimeType,
@@ -399,8 +410,13 @@ export async function deleteLessonVideoAction(lessonId: string, courseId: string
 
   if (!video) return { ok: false, error: 'No se encontró el video.' }
 
-  await supabase.storage.from('lesson-videos').remove([video.storage_path])
-  await supabase.from('lesson_videos').delete().eq('id', video.id)
+  try {
+    const { client, bucket } = getSpacesClient()
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: video.storage_path }))
+  } catch {
+    // log but don't block the DB delete
+  }
 
+  await supabase.from('lesson_videos').delete().eq('id', video.id)
   return { ok: true }
 }
