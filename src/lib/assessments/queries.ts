@@ -75,6 +75,66 @@ export async function getAssessments(profile: Profile): Promise<Assessment[]> {
   }))
 }
 
+export type ExamQuestion = Omit<Question, 'correct_answer'>
+
+export async function getCourseAssessments(courseId: string): Promise<Assessment[]> {
+  const supabase = await createClient()
+
+  const { data } = await supabase
+    .from('assessments')
+    .select('id, course_id, title, description, passing_score, max_attempts, time_limit_minutes, is_published, created_at, courses(title, slug)')
+    .eq('course_id', courseId)
+    .eq('is_published', true)
+    .order('created_at', { ascending: true })
+
+  if (!data) return []
+
+  const assessmentIds = data.map((a) => a.id)
+  const { data: qCounts } = await supabase
+    .from('questions')
+    .select('assessment_id')
+    .in('assessment_id', assessmentIds.length > 0 ? assessmentIds : ['none'])
+
+  const countMap = new Map<string, number>()
+  for (const q of qCounts ?? []) {
+    countMap.set(q.assessment_id, (countMap.get(q.assessment_id) ?? 0) + 1)
+  }
+
+  return data.map((a) => ({
+    ...a,
+    course: Array.isArray(a.courses) ? a.courses[0] ?? null : (a.courses as { title: string; slug: string } | null),
+    question_count: countMap.get(a.id) ?? 0,
+  }))
+}
+
+export async function getAssessmentForExam(
+  assessmentId: string,
+): Promise<(Omit<Assessment, 'course'> & { questions: ExamQuestion[] }) | null> {
+  const supabase = await createClient()
+
+  const { data: assessment } = await supabase
+    .from('assessments')
+    .select('id, course_id, title, description, passing_score, max_attempts, time_limit_minutes, is_published, created_at')
+    .eq('id', assessmentId)
+    .eq('is_published', true)
+    .single()
+
+  if (!assessment) return null
+
+  // Intencionalmente NO se selecciona correct_answer
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('id, assessment_id, question_text, question_type, options, points, order_index')
+    .eq('assessment_id', assessmentId)
+    .order('order_index', { ascending: true })
+
+  return {
+    ...assessment,
+    question_count: (questions ?? []).length,
+    questions: (questions ?? []) as ExamQuestion[],
+  }
+}
+
 export async function getAssessmentWithQuestions(
   assessmentId: string,
   profile: Profile,

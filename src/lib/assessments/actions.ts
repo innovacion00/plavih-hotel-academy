@@ -37,7 +37,13 @@ export async function createAssessmentAction(
     return { ok: false, error: 'Sin permisos para crear evaluaciones.' }
   }
 
-  const parsed = assessmentSchema.safeParse(Object.fromEntries(formData))
+  const raw = Object.fromEntries(formData)
+  const parsed = assessmentSchema.safeParse({
+    ...raw,
+    time_limit_minutes: raw.time_limit_minutes === '' ? undefined : raw.time_limit_minutes,
+    passing_score: raw.passing_score === '' ? '70' : raw.passing_score,
+    max_attempts: raw.max_attempts === '' ? '3' : raw.max_attempts,
+  })
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
   }
@@ -122,6 +128,51 @@ export async function deleteQuestionAction(questionId: string): Promise<ActionRe
   const { error } = await supabase.from('questions').delete().eq('id', questionId)
   if (error) return { ok: false, error: 'No se pudo eliminar la pregunta.' }
   return { ok: true }
+}
+
+export async function submitExamAction(
+  assessmentId: string,
+  answers: Record<string, string>,
+): Promise<ActionResult<{ score: number; passed: boolean; earned_points: number; total_points: number }>> {
+  const profile = await getServerProfile()
+  if (!profile || !can(profile.role, 'view:assessments')) {
+    return { ok: false, error: 'Sin permisos.' }
+  }
+
+  const supabase = await createClient()
+
+  const { data: assessment } = await supabase
+    .from('assessments')
+    .select('passing_score, is_published')
+    .eq('id', assessmentId)
+    .single()
+
+  if (!assessment || !assessment.is_published) {
+    return { ok: false, error: 'Evaluación no disponible.' }
+  }
+
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('id, correct_answer, points')
+    .eq('assessment_id', assessmentId)
+
+  if (!questions) return { ok: false, error: 'No se pudo cargar la evaluación.' }
+
+  let earned = 0
+  const total = questions.reduce((s, q) => s + q.points, 0)
+
+  for (const q of questions) {
+    const submitted = (answers[q.id] ?? '').trim().toLowerCase()
+    const correct = q.correct_answer.trim().toLowerCase()
+    if (submitted && submitted === correct) {
+      earned += q.points
+    }
+  }
+
+  const score = total > 0 ? Math.round((earned / total) * 100) : 0
+  const passed = score >= assessment.passing_score
+
+  return { ok: true, data: { score, passed, earned_points: earned, total_points: total } }
 }
 
 export async function toggleAssessmentPublished(

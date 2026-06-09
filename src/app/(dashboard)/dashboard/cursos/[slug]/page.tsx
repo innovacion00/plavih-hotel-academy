@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getServerProfile, isMockMode } from '@/lib/auth/session'
 import { getCourseDetail } from '@/lib/video/queries'
+import { getCourseAssessments } from '@/lib/assessments/queries'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
 import VideoProgressBar from '@/components/video/VideoProgressBar'
 import EnrollButton from './EnrollButton'
@@ -28,6 +29,10 @@ export default async function CourseDetailPage({ params }: Props) {
   const isStudent = profile.role === 'student'
   const isEnrolled = !!course.enrollment?.is_active
   const progressPercent = course.enrollment?.progress_percent ?? 0
+
+  const assessments = (!isStudent || isEnrolled) && !isMockMode
+    ? await getCourseAssessments(course.id)
+    : []
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -175,7 +180,7 @@ export default async function CourseDetailPage({ params }: Props) {
                                   : 'bg-[#00A9E0] text-white hover:bg-[#007FA8]'
                               }`}
                             >
-                              {isCompleted ? 'Repasar' : hasProgress ? 'Continuar' : 'Leer'}
+                              {isCompleted ? 'Repasar' : hasProgress ? 'Continuar' : lesson.content_type === 'text' ? 'Leer' : 'Ver'}
                             </Link>
                           ) : canAccess ? (
                             <span className="text-xs text-[#5F6368] font-medium">Próximamente</span>
@@ -188,6 +193,35 @@ export default async function CourseDetailPage({ params }: Props) {
                   })}
                 </ul>
               )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Assessments */}
+      {assessments.length > 0 && (
+        <div className="mt-4 space-y-3">
+          <h2 className="text-sm font-semibold text-[#222222] px-1">Evaluaciones del curso</h2>
+          {assessments.map((a) => (
+            <div key={a.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-[#222222] truncate">{a.title}</p>
+                <div className="flex flex-wrap gap-3 mt-1 text-xs text-[#5F6368]">
+                  <span>📝 {a.question_count} preguntas</span>
+                  <span>🎯 {a.passing_score}% para aprobar</span>
+                  <span>🔄 {a.max_attempts} intentos máx.</span>
+                  {a.time_limit_minutes && <span>⏱ {a.time_limit_minutes} min</span>}
+                </div>
+                {a.description && (
+                  <p className="text-xs text-[#5F6368] mt-1 line-clamp-1">{a.description}</p>
+                )}
+              </div>
+              <Link
+                href={`/dashboard/evaluaciones/${a.id}`}
+                className="shrink-0 bg-[#00A9E0] hover:bg-[#007FA8] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors"
+              >
+                {isStudent ? 'Tomar evaluación →' : 'Ver →'}
+              </Link>
             </div>
           ))}
         </div>
