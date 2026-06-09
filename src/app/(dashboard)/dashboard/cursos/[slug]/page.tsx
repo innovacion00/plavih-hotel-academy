@@ -166,7 +166,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
                         {/* Action */}
                         <div className="shrink-0">
-                          {canAccess && lesson.content_type === 'video' ? (
+                          {canAccess && (lesson.content_type === 'video' || lesson.content_type === 'text') ? (
                             <Link
                               href={`/dashboard/cursos/${slug}/lecciones/${lesson.id}`}
                               className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
@@ -175,7 +175,7 @@ export default async function CourseDetailPage({ params }: Props) {
                                   : 'bg-[#00A9E0] text-white hover:bg-[#007FA8]'
                               }`}
                             >
-                              {isCompleted ? 'Repasar' : hasProgress ? 'Continuar' : 'Ver'}
+                              {isCompleted ? 'Repasar' : hasProgress ? 'Continuar' : 'Leer'}
                             </Link>
                           ) : canAccess ? (
                             <span className="text-xs text-[#5F6368] font-medium">Próximamente</span>
