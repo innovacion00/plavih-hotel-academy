@@ -321,7 +321,7 @@ export async function getVideoUploadUrl(params: {
   if (!canEdit) return { ok: false, error: 'Sin acceso a este curso.' }
 
   const ext = params.fileName.split('.').pop() ?? 'mp4'
-  const storagePath = `courses/${params.courseId}/lessons/${params.lessonId}/${Date.now()}.${ext}`
+  const storagePath = `VideosPlavih/courses/${params.courseId}/lessons/${params.lessonId}/${Date.now()}.${ext}`
 
   try {
     const { client, bucket } = getSpacesClient()
@@ -329,6 +329,7 @@ export async function getVideoUploadUrl(params: {
       Bucket: bucket,
       Key: storagePath,
       ContentType: params.mimeType,
+      ACL: 'public-read',
     })
     const signedUrl = await getSignedUrl(client, command, { expiresIn: 15 * 60 })
     return { ok: true, data: { signedUrl, storagePath } }
