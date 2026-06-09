@@ -193,6 +193,18 @@ function LessonRow({
             {lesson.video ? 'Reemplazar video' : '+ Subir video'}
           </Link>
         )}
+        {lesson.content_type === 'text' && (
+          <Link
+            href={`/dashboard/cursos/${courseSlug}/builder/lecciones/${lesson.id}/texto`}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
+              lesson.content
+                ? 'border-gray-200 text-[#5F6368] hover:border-[#00A9E0] hover:text-[#00A9E0]'
+                : 'border-[#00A9E0] text-[#00A9E0] bg-blue-50 hover:bg-[#00A9E0] hover:text-white'
+            }`}
+          >
+            {lesson.content ? 'Editar texto' : '+ Agregar texto'}
+          </Link>
+        )}
         <button
           onClick={handleDelete}
           disabled={deleting}

@@ -19,6 +19,7 @@ export type BuilderLesson = {
   title: string
   description: string | null
   content_type: 'video' | 'text' | 'quiz' | 'file'
+  content: string | null
   duration_minutes: number | null
   order_index: number
   is_free_preview: boolean
@@ -91,6 +92,7 @@ export async function getCourseBuilderData(
         ...m,
         lessons: m.lessons.map((l) => ({
           ...l,
+          content: null,
           video: l.video
             ? {
                 id: l.video.id,
@@ -131,7 +133,7 @@ export async function getCourseBuilderData(
 
   const { data: lessons } = await supabase
     .from('lessons')
-    .select('id, module_id, title, description, content_type, duration_minutes, order_index, is_free_preview')
+    .select('id, module_id, title, description, content_type, content, duration_minutes, order_index, is_free_preview')
     .in('module_id', moduleIds.length > 0 ? moduleIds : ['none'])
     .order('order_index', { ascending: true })
 
@@ -153,6 +155,7 @@ export async function getCourseBuilderData(
     lessonsByModule.get(lesson.module_id)!.push({
       ...lesson,
       content_type: lesson.content_type as BuilderLesson['content_type'],
+      content: lesson.content ?? null,
       video: vid
         ? {
             id: vid.id,

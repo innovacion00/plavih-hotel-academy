@@ -280,6 +280,25 @@ export async function updateLessonAction(
   return { ok: true }
 }
 
+export async function saveLessonContentAction(
+  lessonId: string,
+  courseId: string,
+  content: string,
+): Promise<ActionResult> {
+  if (isMockMode) return { ok: false, error: 'Modo demo activo.' }
+
+  const profile = await getServerProfile()
+  if (!profile || profile.role === 'student') return { ok: false, error: 'Sin permisos.' }
+
+  const supabase = await createClient()
+  const canEdit = await assertEditAccess(courseId, profile, supabase)
+  if (!canEdit) return { ok: false, error: 'Sin acceso.' }
+
+  const { error } = await supabase.from('lessons').update({ content }).eq('id', lessonId)
+  if (error) return { ok: false, error: 'No se pudo guardar el contenido.' }
+  return { ok: true }
+}
+
 export async function deleteLessonAction(lessonId: string, courseId: string): Promise<ActionResult> {
   if (isMockMode) return { ok: false, error: 'Modo demo activo.' }
 
