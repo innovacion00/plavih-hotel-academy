@@ -10,6 +10,7 @@ export type MockLesson = {
   title: string
   description: string | null
   content_type: 'video' | 'text' | 'quiz' | 'file'
+  content: string | null
   duration_minutes: number | null
   order_index: number
   is_free_preview: boolean
@@ -66,6 +67,7 @@ const DEMO_MODULES: MockModule[] = [
         title: 'Bienvenida e introducción',
         description: 'Presentación del curso y expectativas del programa.',
         content_type: 'video',
+        content: null,
         duration_minutes: 5,
         order_index: 0,
         is_free_preview: true,
@@ -78,6 +80,7 @@ const DEMO_MODULES: MockModule[] = [
         title: 'Cultura de servicio cinco estrellas',
         description: 'Los pilares del servicio de excelencia en la industria hotelera.',
         content_type: 'video',
+        content: null,
         duration_minutes: 12,
         order_index: 1,
         is_free_preview: false,
@@ -90,6 +93,7 @@ const DEMO_MODULES: MockModule[] = [
         title: 'Protocolos de presentación personal',
         description: 'Normas de imagen y uniformidad en hoteles de lujo.',
         content_type: 'video',
+        content: null,
         duration_minutes: 8,
         order_index: 2,
         is_free_preview: false,
@@ -111,6 +115,7 @@ const DEMO_MODULES: MockModule[] = [
         title: 'Check-in y check-out eficiente',
         description: 'Flujo completo del proceso de llegada y salida del huésped.',
         content_type: 'video',
+        content: null,
         duration_minutes: 15,
         order_index: 0,
         is_free_preview: false,
@@ -123,6 +128,7 @@ const DEMO_MODULES: MockModule[] = [
         title: 'Resolución de quejas y conflictos',
         description: 'Cómo convertir una queja en una oportunidad de fidelización.',
         content_type: 'video',
+        content: null,
         duration_minutes: 10,
         order_index: 1,
         is_free_preview: false,
@@ -144,6 +150,7 @@ const DEMO_MODULES: MockModule[] = [
         title: 'Evaluación del módulo',
         description: 'Evaluación de conocimientos del programa.',
         content_type: 'quiz',
+        content: null,
         duration_minutes: 20,
         order_index: 0,
         is_free_preview: false,

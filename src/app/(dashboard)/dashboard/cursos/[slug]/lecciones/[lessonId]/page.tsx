@@ -73,7 +73,7 @@ export default async function LessonPage({ params }: Props) {
         </div>
       )}
 
-      {/* Video player or placeholder */}
+      {/* Video player, text content, or placeholder */}
       {isVideo ? (
         <div className="mb-6">
           <VideoPlayer
@@ -87,6 +87,10 @@ export default async function LessonPage({ params }: Props) {
             title={lesson.title}
           />
         </div>
+      ) : lesson.content_type === 'text' && lesson.content ? (
+        <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+          <p className="text-sm text-[#222222] leading-relaxed whitespace-pre-wrap">{lesson.content}</p>
+        </div>
       ) : (
         <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <span className="text-4xl mb-3 block">
@@ -95,7 +99,7 @@ export default async function LessonPage({ params }: Props) {
           <p className="text-[#5F6368] text-sm">
             {lesson.content_type === 'quiz'
               ? 'Este módulo incluye una evaluación. Las evaluaciones estarán disponibles en Fase 1.3.'
-              : 'Contenido no disponible todavía.'}
+              : 'El instructor aún no ha agregado contenido a esta lección.'}
           </p>
         </div>
       )}

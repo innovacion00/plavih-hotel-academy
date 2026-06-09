@@ -21,6 +21,7 @@ export type LessonWithVideo = {
   title: string
   description: string | null
   content_type: 'video' | 'text' | 'quiz' | 'file'
+  content: string | null
   duration_minutes: number | null
   order_index: number
   is_free_preview: boolean
@@ -108,7 +109,7 @@ export async function getCourseDetail(
   const moduleIds = modules.map((m) => m.id)
   const { data: lessons } = await supabase
     .from('lessons')
-    .select('id, module_id, title, description, content_type, duration_minutes, order_index, is_free_preview')
+    .select('id, module_id, title, description, content_type, content, duration_minutes, order_index, is_free_preview')
     .in('module_id', moduleIds)
     .order('order_index', { ascending: true })
 
@@ -136,6 +137,7 @@ export async function getCourseDetail(
     if (!lessonsByModule.has(lesson.module_id)) lessonsByModule.set(lesson.module_id, [])
     lessonsByModule.get(lesson.module_id)!.push({
       ...lesson,
+      content: lesson.content ?? null,
       video: vid ? { id: vid.id, storage_path: vid.storage_path, duration_seconds: vid.duration_seconds } : null,
       progress: prog ? { position_seconds: prog.position_seconds, percent_watched: prog.percent_watched, is_completed: prog.is_completed } : null,
     })
@@ -172,7 +174,7 @@ export async function getLessonDetail(
 
   const { data: lesson } = await supabase
     .from('lessons')
-    .select('id, module_id, title, description, content_type, duration_minutes, order_index, is_free_preview')
+    .select('id, module_id, title, description, content_type, content, duration_minutes, order_index, is_free_preview')
     .eq('id', lessonId)
     .single()
   if (!lesson) return null
@@ -196,6 +198,7 @@ export async function getLessonDetail(
 
   return {
     ...lesson,
+    content: lesson.content ?? null,
     video: video ? { id: video.id, storage_path: video.storage_path, duration_seconds: video.duration_seconds } : null,
     progress,
   }
