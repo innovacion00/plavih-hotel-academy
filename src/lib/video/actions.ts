@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getServerProfile, isMockMode } from '@/lib/auth/session'
+import { getPublicVideoUrl } from '@/lib/video/spaces-client'
 
 const COMPLETION_THRESHOLD = 90  // percent
 
@@ -24,15 +25,12 @@ export async function getSignedVideoUrl(
 
   if (!video) return { url: null, error: 'Video no encontrado.' }
 
-  const { data, error } = await supabase.storage
-    .from('lesson-videos')
-    .createSignedUrl(video.storage_path, 3600)  // 1 hour
-
-  if (error || !data?.signedUrl) {
+  try {
+    const url = getPublicVideoUrl(video.storage_path)
+    return { url }
+  } catch {
     return { url: null, error: 'No se pudo generar el enlace de video.' }
   }
-
-  return { url: data.signedUrl }
 }
 
 // ── Progress heartbeat ────────────────────────────────────────
